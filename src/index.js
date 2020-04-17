@@ -488,15 +488,15 @@ function xWing(squares) {
                 .forEach(square => removeCandidates(square, [candidate])));
     }
 
-    const squaresInColumns = rows(squares);
+    const squaresInColumns = columns(squares);
     for (let candidate = 1; candidate <= 9; candidate++) {
-        const interestingRows = squaresInColumns
+        const interestingColumns = squaresInColumns
             .map(squaresInColumn => squaresInColumn
                 .filter(squareHasNoValue)
                 .filter(squareHasCandidate(candidate)))
             .filter(squaresInColumn => squaresInColumn.length === 2);
         
-        combinationsWithoutRepetition(interestingRows)
+        combinationsWithoutRepetition(interestingColumns)
             .filter(({a, b}) => a[0].row === b[0].row && a[1].row === b[1].row)
             .forEach(({a, b}) => squares
                 .filter(squareHasNoValue)
