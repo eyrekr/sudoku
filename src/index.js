@@ -10,10 +10,8 @@ function Game() {
         if (serializedSquares != null) {
             const loadedSquares = deserializeSquares(serializedSquares);
             reduceCandidates(loadedSquares);
-            console.log("SERIALIZED SQUARES LOADED");
             return loadedSquares;
         }
-        console.log("EMPTY SQUARES")
         return emptySquares();
     });
     const [selected, setSelected] = useState(0);
