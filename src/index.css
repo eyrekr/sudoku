@@ -1,0 +1,47 @@
+body {
+  font: 14px "Helvetica Neue";
+  margin: 20px;
+}
+
+.game {
+  display: flex;
+  flex-direction: column;
+}
+
+.square {
+  background: #fff;
+  border: 1px solid #ddd;
+  float: left;
+  font-size: 32px;
+  font-weight: 100;
+  line-height: 48px;
+  height: 48px;
+  margin-right: -1px;
+  margin-top: -1px;
+  padding: 0;
+  text-align: center;
+  width: 48px;
+}
+ 
+.selected {
+  background: black;
+  color: white;
+  font-weight: 300;
+}
+
+.highlighted {
+  background: #f0f0f0;
+}
+
+.candidates {
+  font-size: 8px;
+  font-weight: 100;
+}
+
+.uniqueCandidate {
+  color: magenta;
+}
+
+.invalid {
+  color: red;
+}
