@@ -5,16 +5,20 @@ import './index.css';
 ReactDOM.render(<Game />, document.getElementById('root'));
 
 function Game() {
-    const [squares, setSquares] = useState(emptySquares);
+    const [squares, setSquares] = useState(() => {
+        const serializedSquares = localStorage.getItem('board');
+        if (serializedSquares != null) {
+            const loadedSquares = deserializeSquares(serializedSquares);
+            reduceCandidates(loadedSquares);
+            console.log("SERIALIZED SQUARES LOADED");
+            return loadedSquares;
+        }
+        console.log("EMPTY SQUARES")
+        return emptySquares();
+    });
     const [selected, setSelected] = useState(0);
-    const selectedSquare = selected != null ? squares[selected] : null;
+    const selectedSquare = squares[selected];
     const [lockedValue, setLockedValue] = useState(1);
-
-    // useEffect(() => {
-    //     const loadedSquares = deserializeSquares(localStorage.getItem('board'));
-    //     reduceCandidates(loadedSquares);
-    //     setSquares(loadedSquares);
-    // });
 
     function handleKey(e) {
         console.log('KEY: ' + e.key + ' SHIFT: ' + e.shiftKey + ' ALT: ' + e.altKey + ' CODE: ' + e.keyCode);
@@ -35,7 +39,7 @@ function Game() {
         } else if (e.ctrlKey || e.altKey) {
             if (e.keyCode >= 49 && e.keyCode <= 57) {
                 const value = e.keyCode - 48;
-                if (value != lockedValue) {
+                if (value !== lockedValue) {
                     setLockedValue(value);
                 }
             }
