@@ -8,6 +8,7 @@ function Game() {
     const [squares, setSquares] = useState(emptySquares);
     const [selected, setSelected] = useState(0);
     const selectedSquare = selected != null ? squares[selected] : null;
+    const [lockedValue, setLockedValue] = useState(1);
 
     // useEffect(() => {
     //     const loadedSquares = deserializeSquares(localStorage.getItem('board'));
@@ -29,6 +30,14 @@ function Game() {
                     selectedSquare.candidates.sort();
                 }
                 setSquares(clonedSquares);
+            }
+            return;
+        } else if (e.ctrlKey || e.altKey) {
+            if (e.keyCode >= 49 && e.keyCode <= 57) {
+                const value = e.keyCode - 48;
+                if (value != lockedValue) {
+                    setLockedValue(value);
+                }
             }
             return;
         }
@@ -103,7 +112,8 @@ function Game() {
         key={index} 
         squares={squares} 
         selectedSquare={selectedSquare}
-        onSelectSquare={setSelected} />);
+        onSelectSquare={setSelected}
+        lockedValue={lockedValue} />);
 
     return (
         <div className="game" onKeyDown={handleKey} tabIndex="0">
@@ -112,12 +122,13 @@ function Game() {
     );
 }
 
-function Row({squares, selectedSquare, onSelectSquare}) {
+function Row({squares, selectedSquare, onSelectSquare, lockedValue}) {
     const elements = squares.map(square => <Square 
         key={square.i} 
         square={square} 
         selectedSquare={selectedSquare}
-        onSelectSquare={onSelectSquare} />);
+        onSelectSquare={onSelectSquare}
+        lockedValue={lockedValue} />);
     return (
         <div className="board-row">
             {elements}
@@ -125,7 +136,7 @@ function Row({squares, selectedSquare, onSelectSquare}) {
     );
 }
 
-function Square({square, selectedSquare, onSelectSquare}) {
+function Square({square, selectedSquare, onSelectSquare, lockedValue}) {
     let className = "square";
     let valueToDisplay = square.value;
     
@@ -133,9 +144,7 @@ function Square({square, selectedSquare, onSelectSquare}) {
         className += " selected";
     } 
     
-    if (selectedSquare.value != null 
-        && squareHasCandidate(selectedSquare.value)(square)
-        && selectedSquare.i !== square.i) {
+    if (squareHasCandidate(lockedValue)(square) && selectedSquare.i !== square.i) {
         className += " highlighted";
     }
 

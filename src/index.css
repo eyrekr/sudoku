@@ -31,6 +31,7 @@ body {
 
 .highlighted {
   background: #f0f0f0;
+  font-weight: 300;
 }
 
 .candidates {
