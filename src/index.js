@@ -9,6 +9,12 @@ function Game() {
     const [selected, setSelected] = useState(0);
     const selectedSquare = selected != null ? squares[selected] : null;
 
+    useEffect(() => {
+        const loadedSquares = deserializeSquares(localStorage.getItem('board'));
+        reduceCandidates(loadedSquares);
+        setSquares(loadedSquares);
+    });
+
     function handleKey(e) {
         // console.log('KEY: ' + e.key + ' CODE: ' + e.keyCode + ' CHAR: ' + e.charCode);
         switch (e.key) {
