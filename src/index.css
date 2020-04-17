@@ -33,6 +33,10 @@ body {
   background: #f0f0f0;
 }
 
+.pencilMarkMode {
+  background: yellow;
+}
+
 .candidates {
   font-size: 8px;
   font-weight: 100;

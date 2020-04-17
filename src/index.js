@@ -7,17 +7,22 @@ ReactDOM.render(<Game />, document.getElementById('root'));
 function Game() {
     const [squares, setSquares] = useState(emptySquares);
     const [selected, setSelected] = useState(0);
+    const [pencilMarkMode, setPencilMarkMode] = useState(false);
     const selectedSquare = selected != null ? squares[selected] : null;
 
-    useEffect(() => {
-        const loadedSquares = deserializeSquares(localStorage.getItem('board'));
-        reduceCandidates(loadedSquares);
-        setSquares(loadedSquares);
-    });
+    // useEffect(() => {
+    //     const loadedSquares = deserializeSquares(localStorage.getItem('board'));
+    //     reduceCandidates(loadedSquares);
+    //     setSquares(loadedSquares);
+    // });
 
     function handleKey(e) {
-        // console.log('KEY: ' + e.key + ' CODE: ' + e.keyCode + ' CHAR: ' + e.charCode);
+        console.log('KEY: ' + e.key + ' SHIFT: ' + e.shiftKey + ' ALT: ' + e.altKey);
         switch (e.key) {
+            case 'Shift':
+            case 'Alt':
+                setPencilMarkMode(!pencilMarkMode);
+                break;
             case '1':
             case '2':
             case '3':
@@ -27,11 +32,26 @@ function Game() {
             case '7':
             case '8':
             case '9': {
-                const clonedSquares = cloneSquares(squares, resetingCandidates);
-                const value = parseInt(e.key);
-                clonedSquares[selected] = square(selected, value);
-                reduceCandidates(clonedSquares);
-                setSquares(clonedSquares);
+                if (pencilMarkMode) {
+                    if (squareHasNoValue(selectedSquare)) {
+                        const clonedSquares = cloneSquares(squares);
+                        const value = parseInt(e.key);
+                        const selectedSquare = clonedSquares[selected];
+                        if (squareHasCandidate(value)(selectedSquare)) {
+                            removeCandidates(selectedSquare, [value]);
+                        } else {
+                            selectedSquare.candidates.push(value);
+                            selectedSquare.candidates.sort();
+                        }
+                        setSquares(clonedSquares);
+                    }
+                } else {
+                    const clonedSquares = cloneSquares(squares, resetingCandidates);
+                    const value = parseInt(e.key);
+                    clonedSquares[selected] = square(selected, value);
+                    reduceCandidates(clonedSquares);
+                    setSquares(clonedSquares);
+                }
                 break;
             }
             case 'Backspace': {
@@ -87,7 +107,8 @@ function Game() {
         key={index} 
         squares={squares} 
         selectedSquare={selectedSquare}
-        onSelectSquare={setSelected}/>);
+        onSelectSquare={setSelected}
+        pencilMarkMode={pencilMarkMode} />);
 
     return (
         <div className="game" onKeyDown={handleKey} tabIndex="0">
@@ -96,12 +117,13 @@ function Game() {
     );
 }
 
-function Row({squares, selectedSquare, onSelectSquare}) {
+function Row({squares, selectedSquare, onSelectSquare, pencilMarkMode}) {
     const elements = squares.map(square => <Square 
         key={square.i} 
         square={square} 
         selectedSquare={selectedSquare}
-        onSelectSquare={onSelectSquare} />);
+        onSelectSquare={onSelectSquare}
+        pencilMarkMode={pencilMarkMode} />);
     return (
         <div className="board-row">
             {elements}
@@ -109,12 +131,12 @@ function Row({squares, selectedSquare, onSelectSquare}) {
     );
 }
 
-function Square({square, selectedSquare, onSelectSquare}) {
+function Square({square, selectedSquare, onSelectSquare, pencilMarkMode}) {
     let className = "square";
     let valueToDisplay = square.value;
     
     if (selectedSquare.i === square.i) {
-        className += " selected";
+        className += pencilMarkMode ? " pencilMarkMode" : " selected";
     } 
     
     if (selectedSquare.value != null 
