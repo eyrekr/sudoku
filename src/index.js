@@ -274,12 +274,8 @@ function squareHasNoValue({value}) {
 }
 
 // positions
-function notThisSquare({i}) {
-    return square => square.i !== i;
-}
-
-function notTheseSquares(squares) {
-    const ids = squares.map(({i}) => i);
+function notTheseSquares() {    
+    const ids = [...arguments].flat().map(({i}) => i);
     return square => !ids.includes(square.i);
 }
 
@@ -299,12 +295,12 @@ function squareIsNotInTheSameHouseAs({house}) {
     return square => square.house !== house;
 }
 
-function allSquaresAreInOneRow(squares) {
+function allSquaresAreInTheSameRow(squares) {
     const row = squares[0].row;
     return squares.every(square => square.row === row);
 }
 
-function allSquaresAreInOneColumn(squares) {
+function allSquaresAreInTheSameColumn(squares) {
     const column = squares[0].column;
     return squares.every(square => square.column === column);
 }
@@ -336,41 +332,39 @@ function removeCandidates() {
     return square => square.candidates = square.candidates.filter(value => !values.includes(value));
 }
 
-// [[1, [A, B, C]], [2, [A]], ...]
-function candidateAndSquares(squares) {
-    return candidates().map(candidate => [candidate, squares.filter(squareHasNoValue).filter(squareHasCandidate(candidate))]);
+// [[[A, B, C], 1], [[A], 2], ...]
+function squaresWithCandidate(squares) {
+    return candidates().map(candidate => [squares.filter(squareHasNoValue).filter(squareHasCandidate(candidate)), candidate]);
 }
-
 
 
 
 // BASIC ELIMINATION
 // the same value cannot be in the same house, row and column
 function basicElimination(squares) {
-    squares.filter(squareHasValue).forEach(square => 
-        squares
+    squares
+        .filter(squareHasValue)
+        .forEach(square => squares
             .filter(squareIsInTheSameRowColumnOrHouseAs(square))
-            .filter(notThisSquare(square))
+            .filter(notTheseSquares(square))
             .forEach(removeCandidates(square.value)));
 }
-
-
 
 // OMMISSION
 // candidate only in one column/row in one house => candidate cannot be anywhere else in the column/row
 // https://www.learn-sudoku.com/omission.html
 function ommission(squares) {
     houses(squares)
-        .flatMap(candidateAndSquares)
-        .filter(([_, squares]) => squares.length >= 2)
-        .forEach(([candidate, squaresWithCandidate]) => {
+        .flatMap(squaresWithCandidate)
+        .filter(([squares]) => squares.length >= 2)
+        .forEach(([squaresWithCandidate, candidate]) => {
                 const square = squaresWithCandidate[0];
-                if (allSquaresAreInOneRow(squaresWithCandidate)) {
+                if (allSquaresAreInTheSameRow(squaresWithCandidate)) {
                     squares
                         .filter(squareIsInTheSameRowAs(square))
                         .filter(squareIsNotInTheSameHouseAs(square))
                         .forEach(removeCandidates(candidate));
-                } else if (allSquaresAreInOneColumn(squaresWithCandidate)) {
+                } else if (allSquaresAreInTheSameColumn(squaresWithCandidate)) {
                     squares
                         .filter(squareIsInTheSameColumnAs(square))
                         .filter(squareIsNotInTheSameHouseAs(square))
@@ -379,18 +373,14 @@ function ommission(squares) {
             });
 }
 
-
-
 // HIDDEN SINGLE 
 // there is no other square in which the value can be in the row/column/block
 // https://www.learn-sudoku.com/lone-singles.html
 function hiddenSingle(squares) {
-    function revealIn(groupsOf) {
-        groupsOf(squares) // [[A, B, C], [D, E, F]]
-            .flatMap(candidateAndSquares) // [1, [A, B]]
-            .filter(([_, squares]) => squares.length === 1)
-            .forEach(([candidate, squares]) => squares[0].candidates = [candidate]);
-    }
+    const revealIn = groupsOf => groupsOf(squares) // [[A, B, C], [D, E, F]]
+        .flatMap(squaresWithCandidate) // [[A, B], 1]
+        .filter(([squares]) => squares.length === 1)
+        .forEach(([squares, candidate]) => squares[0].candidates = [candidate]);
 
     revealIn(houses);
     revealIn(columns);
@@ -441,8 +431,8 @@ function hiddenPair(squares) {
 // two squares in the same row/column/house have identical two candidates, no other square in the same row/column/house can have those candidates
 // https://www.learn-sudoku.com/naked-pairs.html
 function nakedPair(squares) {
-    function revealIn(groupsOf) {
-        groupsOf(squares).forEach(squaresInGroup => {
+    const revealIn = groupsOf => groupsOf(squares)
+        .forEach(squaresInGroup => {
             const squaresWithTwoCandidates = squaresInGroup
                 .filter(squareHasNoValue)
                 .filter(square => square.candidates.length === 2);
@@ -450,10 +440,9 @@ function nakedPair(squares) {
             allUniquePairs(squaresWithTwoCandidates)
                 .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
                 .forEach(([a, b]) => squaresInGroup 
-                    .filter(notTheseSquares([a, b]))
+                    .filter(notTheseSquares(a, b))
                     .forEach(removeCandidates(a.candidates)));
         });
-    }
 
     revealIn(rows);
     revealIn(columns);
@@ -475,10 +464,10 @@ function nakedTripple(squares) {
                 .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
                 .forEach(([square, squareWithIdenticalCandidates]) => squaresInGroup 
                     .filter(squareHasNoValue)
-                    .filter(notTheseSquares([square, squareWithIdenticalCandidates]))
+                    .filter(notTheseSquares(square, squareWithIdenticalCandidates))
                     .filter(squareHasOnlyCandidatesAs(square))
                     .forEach(thirdSquare => squaresInGroup
-                        .filter(notTheseSquares([square, squareWithIdenticalCandidates, thirdSquare]))
+                        .filter(notTheseSquares(square, squareWithIdenticalCandidates, thirdSquare))
                         .forEach(removeCandidates(square.candidates))));
         });
     }
@@ -505,7 +494,7 @@ function xWing(squares) {
             .filter(([[a, b], [c, d]]) => a.column === c.column && b.column === d.column)
             .forEach(([[a, b], [c, d]]) => squares
                 .filter(squareHasNoValue)
-                .filter(notTheseSquares([a, b, c, d]))
+                .filter(notTheseSquares(a, b, c, d))
                 .filter(square => squareIsInTheSameColumnAs(a)(square) || squareIsInTheSameColumnAs(b)(square))
                 .forEach(removeCandidates(candidate)));
     });
@@ -522,7 +511,7 @@ function xWing(squares) {
             .filter(([[a, b], [c, d]]) => a.row === c.row && b.row === d.row)
             .forEach(([[a, b], [c, d]]) => squares
                 .filter(squareHasNoValue)
-                .filter(notTheseSquares([a, b, c, d]))
+                .filter(notTheseSquares(a, b, c, d))
                 .filter(square => squareIsInTheSameRowAs(a)(square) || squareIsInTheSameRowAs(b)(square))
                 .forEach(removeCandidates(candidate)));
     });
