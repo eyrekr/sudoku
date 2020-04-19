@@ -349,32 +349,13 @@ function basicElimination(squares) {
 
 
 
-// HIDDEN SINGLE 
-// there is no other square in which the value can be in the row/column/block
-// https://www.learn-sudoku.com/lone-singles.html
-function hiddenSingle(squares) {
-    function revealIn(groupsOf) {
-        groupsOf(squares) // [[A, B, C], [D, E, F]]
-            .flatMap(candidateAndSquares) // [1, [A, B]]
-            .filter(([candidate, squares]) => squares.length === 1)
-            .forEach(([candidate, squares]) => squares[0].candidates = [candidate]);
-    }
-
-    revealIn(houses);
-    revealIn(columns);
-    revealIn(rows);
-}
-
-
-
-
 // OMMISSION
 // candidate only in one column/row in one house => candidate cannot be anywhere else in the column/row
 // https://www.learn-sudoku.com/omission.html
 function ommission(squares) {
     houses(squares)
         .flatMap(candidateAndSquares)
-        .filter(([candidate, squares]) => squares.length >= 2)
+        .filter(([_, squares]) => squares.length >= 2)
         .forEach(([candidate, squaresWithCandidate]) => {
                 const square = squaresWithCandidate[0];
                 if (allSquaresAreInOneRow(squaresWithCandidate)) {
@@ -393,59 +374,20 @@ function ommission(squares) {
 
 
 
-// NAKED PAIR
-// two squares in the same row/column/house have identical two candidates, no other square in the same row/column/house can have those candidates
-// https://www.learn-sudoku.com/naked-pairs.html
-function nakedPair(squares) {
+// HIDDEN SINGLE 
+// there is no other square in which the value can be in the row/column/block
+// https://www.learn-sudoku.com/lone-singles.html
+function hiddenSingle(squares) {
     function revealIn(groupsOf) {
-        groupsOf(squares).forEach(squaresInGroup => {
-            const squaresWithTwoCandidates = squaresInGroup
-                .filter(squareHasNoValue)
-                .filter(square => square.candidates.length === 2);
-
-            combinationsWithoutRepetition(squaresWithTwoCandidates)
-                .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
-                .forEach(([a, b]) => squaresInGroup 
-                    .filter(notTheseSquares([a, b]))
-                    .forEach(relatedSquare => removeCandidates(relatedSquare, a.candidates)));
-        });
+        groupsOf(squares) // [[A, B, C], [D, E, F]]
+            .flatMap(candidateAndSquares) // [1, [A, B]]
+            .filter(([_, squares]) => squares.length === 1)
+            .forEach(([candidate, squares]) => squares[0].candidates = [candidate]);
     }
 
-    revealIn(rows);
-    revealIn(columns);
     revealIn(houses);
-}
-
-// NAKED TRIPPLE
-// three squares in the same row/column/house have identical three candidates, no other square in the same row/column/house can have those candidates
-// one of the squares can have only 2 of the values, not all three of them, e.g. 167 - 167 - 16 works too
-// https://www.learn-sudoku.com/naked-triplets.html
-function nakedTripple(squares) {
-    function revealIn(groupsOf) {
-        for (let squaresInGroup of groupsOf(squares)) {
-            const squaresWithThreeCandidates = squaresInGroup
-                .filter(squareHasNoValue)
-                .filter(square => square.candidates.length === 3);
-
-            squaresWithThreeCandidates.forEach(square => squaresWithThreeCandidates
-                .filter(notThisSquare(square))
-                .filter(squareHasIdenticalCandidatesAs(square))
-                .forEach(squareWithIdenticalCandidates => squaresInGroup 
-                    .filter(squareHasNoValue)
-                    .filter(notThisSquare(square))
-                    .filter(notThisSquare(squareWithIdenticalCandidates))
-                    .filter(squareHasOnlyCandidatesAs(square))
-                    .forEach(thirdSquare => squaresInGroup
-                        .filter(notThisSquare(square))
-                        .filter(notThisSquare(squareWithIdenticalCandidates))
-                        .filter(notThisSquare(thirdSquare))
-                        .forEach(relatedSquare => removeCandidates(relatedSquare, square.candidates)))));
-        }
-    }
-
-    revealIn(rows);
     revealIn(columns);
-    revealIn(houses);
+    revealIn(rows);
 }
 
 
@@ -484,6 +426,63 @@ function hiddenPair(squares) {
     revealIn(houses);
 }
 
+
+
+
+
+// NAKED PAIR
+// two squares in the same row/column/house have identical two candidates, no other square in the same row/column/house can have those candidates
+// https://www.learn-sudoku.com/naked-pairs.html
+function nakedPair(squares) {
+    function revealIn(groupsOf) {
+        groupsOf(squares).forEach(squaresInGroup => {
+            const squaresWithTwoCandidates = squaresInGroup
+                .filter(squareHasNoValue)
+                .filter(square => square.candidates.length === 2);
+
+            allPairs(squaresWithTwoCandidates)
+                .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
+                .forEach(([a, b]) => squaresInGroup 
+                    .filter(notTheseSquares([a, b]))
+                    .forEach(relatedSquare => removeCandidates(relatedSquare, a.candidates)));
+        });
+    }
+
+    revealIn(rows);
+    revealIn(columns);
+    revealIn(houses);
+}
+
+// NAKED TRIPPLE
+// three squares in the same row/column/house have identical three candidates, no other square in the same row/column/house can have those candidates
+// one of the squares can have only 2 of the values, not all three of them, e.g. 167 - 167 - 16 works too
+// https://www.learn-sudoku.com/naked-triplets.html
+function nakedTripple(squares) {
+    function revealIn(groupsOf) {
+        groupsOf(squares).forEach(squaresInGroup => {
+            const squaresWithThreeCandidates = squaresInGroup
+                .filter(squareHasNoValue)
+                .filter(square => square.candidates.length === 3);
+
+            allPairs(squaresWithThreeCandidates)
+                .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
+                .forEach(([a, b]) => squaresInGroup 
+                    .filter(squareHasNoValue)
+                    .filter(notTheseSquares([a, b]))
+                    .filter(squareHasOnlyCandidatesAs(a))
+                    .forEach(c => squaresInGroup
+                        .filter(notTheseSquares([a, b, c]))
+                        .forEach(affectedSquare => removeCandidates(affectedSquare, a.candidates))));
+        });
+    }
+
+    revealIn(rows);
+    revealIn(columns);
+    revealIn(houses);
+}
+
+
+
 // X-WING
 // https://www.learn-sudoku.com/x-wing.html
 function xWing(squares) {
@@ -495,7 +494,7 @@ function xWing(squares) {
                 .filter(squareHasCandidate(candidate)))
             .filter(squaresInRow => squaresInRow.length === 2);
 
-        combinationsWithoutRepetition(interestingRows)
+        allPairs(interestingRows)
             .filter(([a, b]) => a[0].column === b[0].column && a[1].column === b[1].column)
             .forEach(([a, b]) => squares
                 .filter(squareHasNoValue)
@@ -513,7 +512,7 @@ function xWing(squares) {
                 .filter(squareHasCandidate(candidate)))
             .filter(squaresInColumn => squaresInColumn.length === 2);
         
-        combinationsWithoutRepetition(interestingColumns)
+        allPairs(interestingColumns)
             .filter(([a, b]) => a[0].row === b[0].row && a[1].row === b[1].row)
             .forEach(([a, b]) => squares
                 .filter(squareHasNoValue)
@@ -524,13 +523,8 @@ function xWing(squares) {
     });
 }
 
-function combinationsWithoutRepetition(array) {
-    const combinations = [];
-    for (let i = 0; i < array.length; i++) {
-        for (let j = i + 1; j < array.length; j++) {
-            combinations.push([array[i], array[j]]);
-        }
-    }
-    return combinations;
+function allPairs(array) {
+    return array.flatMap((a, i) => array
+        .filter((_, j) => i < j)
+        .map(b => [a, b]));
 }
-
