@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
+// REACT
+
 ReactDOM.render(<Game />, document.getElementById('root'));
 
 function Game() {
@@ -176,6 +178,12 @@ function Square({square, selectedSquare, onSelectSquare, lockedValue}) {
     );
 }
 
+// MODEL
+
+function candidates() {
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9];
+}
+
 function square(i, value, candidates = [1, 2, 3, 4, 5, 6, 7, 8, 9]) {
     const smartCandidates = (value == null) ? candidates : [value];
     return {
@@ -241,6 +249,8 @@ function columns(squares) {
 function houses(squares) {
     return Array(9).fill(null).map((_, index) => squares.filter(square => square.house === index));
 }
+
+// CALCULATIONS
 
 function reduceCandidates(squares) {
     basicElimination(squares);
@@ -320,6 +330,15 @@ function removeCandidates(square, values) {
 }
 
 
+// { 1: [A, B, C], 2: [A], 3: [], 4: [A, B, D], ...}
+function histogramOfCandidates(squares) {
+    const histogram = {};
+    candidates().forEach(candidate =>
+        histogram[candidate] = squares.filter(squareHasNoValue).filter(squareHasCandidate(candidate))
+    );
+    return histogram;   
+}
+
 
 
 
@@ -340,16 +359,16 @@ function basicElimination(squares) {
 // there is no other square in which the value can be in the row/column/block
 // https://www.learn-sudoku.com/lone-singles.html
 function hiddenSingle(squares) {
-    function revealIn(grouping) {
-        for (let squaresInGroup of grouping(squares)) {
+    function revealIn(groupsOf) {
+        groupsOf(squares).forEach(squaresInGroup => {
             const histogram = histogramOfCandidates(squaresInGroup);
-            for (let candidate = 1; candidate <= 9; candidate++) {
+            candidates().forEach(candidate => {
                 const squaresWithCandidate = histogram[candidate];
                 if (squaresWithCandidate.length === 1) {
                     squaresWithCandidate[0].candidates = [candidate];
                 }
-            }
-        }
+            });
+        });
     }
 
     revealIn(houses);
@@ -357,14 +376,6 @@ function hiddenSingle(squares) {
     revealIn(rows);
 }
 
-// { 1: [A, B, C], 2: [A], 3: [], 4: [A, B, D], ...}
-function histogramOfCandidates(squares) {
-    const histogram = {};
-    for (let candidate = 1; candidate <= 9; candidate++) {
-        histogram[candidate] = squares.filter(squareHasNoValue).filter(squareHasCandidate(candidate));
-    }
-    return histogram;   
-}
 
 
 
@@ -374,24 +385,23 @@ function histogramOfCandidates(squares) {
 function ommission(squares) {
     for (let squaresInHouse of houses(squares)) {
         const histogram = histogramOfCandidates(squaresInHouse);
-        for (let candidate = 1; candidate <= 9; candidate++) {
+        candidates().forEach(candidate => {
             const squaresWithCandidate = histogram[candidate];
             if (squaresWithCandidate.length >= 2) {
+                const square = squaresWithCandidate[0];
                 if (allSquaresAreInOneRow(squaresWithCandidate)) {
-                    const square = squaresWithCandidate[0];
                     squares
                         .filter(squareIsInTheSameRowAs(square))
                         .filter(squareIsNotInTheSameHouseAs(square))
                         .forEach(relatedSquare => removeCandidates(relatedSquare, [candidate]));
                 } else if (allSquaresAreInOneColumn(squaresWithCandidate)) {
-                    const square = squaresWithCandidate[0];
                     squares
                         .filter(squareIsInTheSameColumnAs(square))
                         .filter(squareIsNotInTheSameHouseAs(square))
                         .forEach(relatedSquare => removeCandidates(relatedSquare, [candidate]));
                 }
             }
-        }
+        });
     }
 }
 
@@ -401,8 +411,8 @@ function ommission(squares) {
 // two squares in the same row/column/house have identical two candidates, no other square in the same row/column/house can have those candidates
 // https://www.learn-sudoku.com/naked-pairs.html
 function nakedPair(squares) {
-    function revealIn(grouping) {
-        for (let squaresInGroup of grouping(squares)) {
+    function revealIn(groupsOf) {
+        groupsOf(squares).forEach(squaresInGroup => {
             const interestingSquares = squaresInGroup
                 .filter(squareHasNoValue)
                 .filter(square => square.candidates.length === 2);
@@ -414,7 +424,7 @@ function nakedPair(squares) {
                     .filter(notThisSquare(square))
                     .filter(notThisSquare(squareWithIdenticalCandidates))
                     .forEach(relatedSquare => removeCandidates(relatedSquare, square.candidates))));
-        }
+        });
     }
 
     revealIn(rows);
@@ -427,8 +437,8 @@ function nakedPair(squares) {
 // one of the squares can have only 2 of the values, not all three of them, e.g. 167 - 167 - 16 works too
 // https://www.learn-sudoku.com/naked-triplets.html
 function nakedTripple(squares) {
-    function revealIn(grouping) {
-        for (let squaresInGroup of grouping(squares)) {
+    function revealIn(groupsOf) {
+        for (let squaresInGroup of groupsOf(squares)) {
             const interestingSquares = squaresInGroup
                 .filter(squareHasNoValue)
                 .filter(square => square.candidates.length === 3);
@@ -459,8 +469,8 @@ function nakedTripple(squares) {
 // FIXME Reimplement this approach  :)
 // https://www.learn-sudoku.com/hidden-pairs.html
 function hiddenPair(squares) {
-    function revealIn(grouping) {
-        for (let squaresInGroup of grouping(squares)) {
+    function revealIn(groupsOf) {
+        for (let squaresInGroup of groupsOf(squares)) {
             for (let a = 1; a <= 9; a++) {
                 const squaresWithCandidateA = squaresInGroup
                     .filter(squareHasNoValue)
