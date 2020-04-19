@@ -466,13 +466,13 @@ function nakedTripple(squares) {
 
             allPairs(squaresWithThreeCandidates)
                 .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
-                .forEach(([a, b]) => squaresInGroup 
+                .forEach(([square, squareWithIdenticalCandidates]) => squaresInGroup 
                     .filter(squareHasNoValue)
-                    .filter(notTheseSquares([a, b]))
-                    .filter(squareHasOnlyCandidatesAs(a))
-                    .forEach(c => squaresInGroup
-                        .filter(notTheseSquares([a, b, c]))
-                        .forEach(affectedSquare => removeCandidates(affectedSquare, a.candidates))));
+                    .filter(notTheseSquares([square, squareWithIdenticalCandidates]))
+                    .filter(squareHasOnlyCandidatesAs(square))
+                    .forEach(thirdSquare => squaresInGroup
+                        .filter(notTheseSquares([square, squareWithIdenticalCandidates, thirdSquare]))
+                        .forEach(affectedSquare => removeCandidates(affectedSquare, square.candidates))));
         });
     }
 
@@ -486,39 +486,37 @@ function nakedTripple(squares) {
 // X-WING
 // https://www.learn-sudoku.com/x-wing.html
 function xWing(squares) {
-    const squaresInRows = rows(squares);
+    const squaresInRows = rows(squares); // [[A,B,C], [D,E,F], [G,H,I], ...]
     candidates().forEach(candidate => {
-        const interestingRows = squaresInRows
+        const rowsWhereOnlyTwoSquaresHaveTheCandidate = squaresInRows
             .map(squaresInRow => squaresInRow
                 .filter(squareHasNoValue)
                 .filter(squareHasCandidate(candidate)))
             .filter(squaresInRow => squaresInRow.length === 2);
 
-        allPairs(interestingRows)
-            .filter(([a, b]) => a[0].column === b[0].column && a[1].column === b[1].column)
-            .forEach(([a, b]) => squares
+        allPairs(rowsWhereOnlyTwoSquaresHaveTheCandidate)
+            .filter(([[a, b], [c, d]]) => a.column === c.column && b.column === d.column)
+            .forEach(([[a, b], [c, d]]) => squares
                 .filter(squareHasNoValue)
-                .filter(notTheseSquares(a))
-                .filter(notTheseSquares(b))
-                .filter(square => squareIsInTheSameColumnAs(a[0])(square) || squareIsInTheSameColumnAs(a[1])(square))
+                .filter(notTheseSquares([a, b, c, d]))
+                .filter(square => squareIsInTheSameColumnAs(a)(square) || squareIsInTheSameColumnAs(b)(square))
                 .forEach(square => removeCandidates(square, [candidate])));
     });
 
-    const squaresInColumns = columns(squares);
+    const columnsWhereOnlyTwoSquaresHaveTheCandidate = columns(squares);
     candidates().forEach(candidate => {
-        const interestingColumns = squaresInColumns
+        const interestingColumns = columnsWhereOnlyTwoSquaresHaveTheCandidate
             .map(squaresInColumn => squaresInColumn
                 .filter(squareHasNoValue)
                 .filter(squareHasCandidate(candidate)))
             .filter(squaresInColumn => squaresInColumn.length === 2);
         
         allPairs(interestingColumns)
-            .filter(([a, b]) => a[0].row === b[0].row && a[1].row === b[1].row)
-            .forEach(([a, b]) => squares
+            .filter(([[a, b], [c, d]]) => a.row === c.row && b.row === d.row)
+            .forEach(([[a, b], [c, d]]) => squares
                 .filter(squareHasNoValue)
-                .filter(notTheseSquares(a))
-                .filter(notTheseSquares(b))
-                .filter(square => squareIsInTheSameRowAs(a[0])(square) || squareIsInTheSameRowAs(a[1])(square))
+                .filter(notTheseSquares([a, b, c, d]))
+                .filter(square => squareIsInTheSameRowAs(a)(square) || squareIsInTheSameRowAs(b)(square))
                 .forEach(square => removeCandidates(square, [candidate])));
     });
 }
