@@ -329,16 +329,10 @@ function removeCandidates(square, values) {
     square.candidates = square.candidates.filter(value => !values.includes(value));
 }
 
-
-// { 1: [A, B, C], 2: [A], 3: [], 4: [A, B, D], ...}
-function histogramOfCandidates(squares) {
-    const histogram = {};
-    candidates().forEach(candidate =>
-        histogram[candidate] = squares.filter(squareHasNoValue).filter(squareHasCandidate(candidate))
-    );
-    return histogram;   
+// [[1, [A, B, C]], [2, [A]], ...]
+function candidateAndSquares(squares) {
+    return candidates().map(candidate => [candidate, squares.filter(squareHasNoValue).filter(squareHasCandidate(candidate))]);
 }
-
 
 
 
@@ -360,15 +354,10 @@ function basicElimination(squares) {
 // https://www.learn-sudoku.com/lone-singles.html
 function hiddenSingle(squares) {
     function revealIn(groupsOf) {
-        groupsOf(squares).forEach(squaresInGroup => {
-            const histogram = histogramOfCandidates(squaresInGroup);
-            candidates().forEach(candidate => {
-                const squaresWithCandidate = histogram[candidate];
-                if (squaresWithCandidate.length === 1) {
-                    squaresWithCandidate[0].candidates = [candidate];
-                }
-            });
-        });
+        groupsOf(squares) // [[A, B, C], [D, E, F]]
+            .flatMap(candidateAndSquares) // [1, [A, B]]
+            .filter(([candidate, squares]) => squares.length === 1)
+            .forEach(([candidate, squares]) => squares[0].candidates = [candidate]);
     }
 
     revealIn(houses);
@@ -383,11 +372,10 @@ function hiddenSingle(squares) {
 // candidate only in one column/row in one house => candidate cannot be anywhere else in the column/row
 // https://www.learn-sudoku.com/omission.html
 function ommission(squares) {
-    for (let squaresInHouse of houses(squares)) {
-        const histogram = histogramOfCandidates(squaresInHouse);
-        candidates().forEach(candidate => {
-            const squaresWithCandidate = histogram[candidate];
-            if (squaresWithCandidate.length >= 2) {
+    houses(squares)
+        .flatMap(candidateAndSquares)
+        .filter(([candidate, squares]) => squares.length >= 2)
+        .forEach(([candidate, squaresWithCandidate]) => {
                 const square = squaresWithCandidate[0];
                 if (allSquaresAreInOneRow(squaresWithCandidate)) {
                     squares
@@ -400,9 +388,7 @@ function ommission(squares) {
                         .filter(squareIsNotInTheSameHouseAs(square))
                         .forEach(relatedSquare => removeCandidates(relatedSquare, [candidate]));
                 }
-            }
-        });
-    }
+            });
 }
 
 
@@ -413,17 +399,15 @@ function ommission(squares) {
 function nakedPair(squares) {
     function revealIn(groupsOf) {
         groupsOf(squares).forEach(squaresInGroup => {
-            const interestingSquares = squaresInGroup
+            const squaresWithTwoCandidates = squaresInGroup
                 .filter(squareHasNoValue)
                 .filter(square => square.candidates.length === 2);
 
-            interestingSquares.forEach(square => interestingSquares
-                .filter(notThisSquare(square))
-                .filter(squareHasIdenticalCandidatesAs(square))
-                .forEach(squareWithIdenticalCandidates => squaresInGroup 
-                    .filter(notThisSquare(square))
-                    .filter(notThisSquare(squareWithIdenticalCandidates))
-                    .forEach(relatedSquare => removeCandidates(relatedSquare, square.candidates))));
+            combinationsWithoutRepetition(squaresWithTwoCandidates)
+                .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
+                .forEach(([a, b]) => squaresInGroup 
+                    .filter(notTheseSquares([a, b]))
+                    .forEach(relatedSquare => removeCandidates(relatedSquare, a.candidates)));
         });
     }
 
@@ -439,11 +423,11 @@ function nakedPair(squares) {
 function nakedTripple(squares) {
     function revealIn(groupsOf) {
         for (let squaresInGroup of groupsOf(squares)) {
-            const interestingSquares = squaresInGroup
+            const squaresWithThreeCandidates = squaresInGroup
                 .filter(squareHasNoValue)
                 .filter(square => square.candidates.length === 3);
 
-            interestingSquares.forEach(square => interestingSquares
+            squaresWithThreeCandidates.forEach(square => squaresWithThreeCandidates
                 .filter(notThisSquare(square))
                 .filter(squareHasIdenticalCandidatesAs(square))
                 .forEach(squareWithIdenticalCandidates => squaresInGroup 
@@ -504,7 +488,7 @@ function hiddenPair(squares) {
 // https://www.learn-sudoku.com/x-wing.html
 function xWing(squares) {
     const squaresInRows = rows(squares);
-    [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(candidate => {
+    candidates().forEach(candidate => {
         const interestingRows = squaresInRows
             .map(squaresInRow => squaresInRow
                 .filter(squareHasNoValue)
@@ -512,8 +496,8 @@ function xWing(squares) {
             .filter(squaresInRow => squaresInRow.length === 2);
 
         combinationsWithoutRepetition(interestingRows)
-            .filter(({a, b}) => a[0].column === b[0].column && a[1].column === b[1].column)
-            .forEach(({a, b}) => squares
+            .filter(([a, b]) => a[0].column === b[0].column && a[1].column === b[1].column)
+            .forEach(([a, b]) => squares
                 .filter(squareHasNoValue)
                 .filter(notTheseSquares(a))
                 .filter(notTheseSquares(b))
@@ -522,7 +506,7 @@ function xWing(squares) {
     });
 
     const squaresInColumns = columns(squares);
-    [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(candidate => {
+    candidates().forEach(candidate => {
         const interestingColumns = squaresInColumns
             .map(squaresInColumn => squaresInColumn
                 .filter(squareHasNoValue)
@@ -530,8 +514,8 @@ function xWing(squares) {
             .filter(squaresInColumn => squaresInColumn.length === 2);
         
         combinationsWithoutRepetition(interestingColumns)
-            .filter(({a, b}) => a[0].row === b[0].row && a[1].row === b[1].row)
-            .forEach(({a, b}) => squares
+            .filter(([a, b]) => a[0].row === b[0].row && a[1].row === b[1].row)
+            .forEach(([a, b]) => squares
                 .filter(squareHasNoValue)
                 .filter(notTheseSquares(a))
                 .filter(notTheseSquares(b))
@@ -544,7 +528,7 @@ function combinationsWithoutRepetition(array) {
     const combinations = [];
     for (let i = 0; i < array.length; i++) {
         for (let j = i + 1; j < array.length; j++) {
-            combinations.push({ a: array[i], b: array[j]});
+            combinations.push([array[i], array[j]]);
         }
     }
     return combinations;
