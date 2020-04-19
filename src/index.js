@@ -440,7 +440,7 @@ function nakedPair(squares) {
                 .filter(squareHasNoValue)
                 .filter(square => square.candidates.length === 2);
 
-            allPairs(squaresWithTwoCandidates)
+            allUniquePairs(squaresWithTwoCandidates)
                 .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
                 .forEach(([a, b]) => squaresInGroup 
                     .filter(notTheseSquares([a, b]))
@@ -464,7 +464,7 @@ function nakedTripple(squares) {
                 .filter(squareHasNoValue)
                 .filter(square => square.candidates.length === 3);
 
-            allPairs(squaresWithThreeCandidates)
+            allUniquePairs(squaresWithThreeCandidates)
                 .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
                 .forEach(([square, squareWithIdenticalCandidates]) => squaresInGroup 
                     .filter(squareHasNoValue)
@@ -494,7 +494,7 @@ function xWing(squares) {
                 .filter(squareHasCandidate(candidate)))
             .filter(squaresInRow => squaresInRow.length === 2);
 
-        allPairs(rowsWhereOnlyTwoSquaresHaveTheCandidate)
+        allUniquePairs(rowsWhereOnlyTwoSquaresHaveTheCandidate)
             .filter(([[a, b], [c, d]]) => a.column === c.column && b.column === d.column)
             .forEach(([[a, b], [c, d]]) => squares
                 .filter(squareHasNoValue)
@@ -511,7 +511,7 @@ function xWing(squares) {
                 .filter(squareHasCandidate(candidate)))
             .filter(squaresInColumn => squaresInColumn.length === 2);
         
-        allPairs(interestingColumns)
+        allUniquePairs(interestingColumns)
             .filter(([[a, b], [c, d]]) => a.row === c.row && b.row === d.row)
             .forEach(([[a, b], [c, d]]) => squares
                 .filter(squareHasNoValue)
@@ -521,7 +521,13 @@ function xWing(squares) {
     });
 }
 
-function allPairs(array) {
+/**
+ * All non-repeating combinations of the elements of the array.
+ * Example: [1, 2, 3, 4] => [[1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]]
+ * 
+ * @param {array} array source array for the pairing
+ */
+function allUniquePairs(array) {
     return array.flatMap((a, i) => array
         .filter((_, j) => i < j)
         .map(b => [a, b]));
