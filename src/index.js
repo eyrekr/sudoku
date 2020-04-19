@@ -28,7 +28,7 @@ function Game() {
                 const value = e.keyCode - 48;
                 const selectedSquare = clonedSquares[selected];
                 if (squareHasCandidate(value)(selectedSquare)) {
-                    removeCandidates(selectedSquare, [value]);
+                    removeCandidates(value)(selectedSquare);
                 } else {
                     selectedSquare.candidates.push(value);
                     selectedSquare.candidates.sort();
@@ -324,9 +324,16 @@ function squareHasOnlyCandidatesAs({candidates}) {
         && square.candidates.every(candidate => candidates.includes(candidate));
 }
 
-
-function removeCandidates(square, values) {
-    square.candidates = square.candidates.filter(value => !values.includes(value));
+/**
+ * Usage:
+ * [A, B, C, D, E].forEach(removeCandidates(1, 2, 3));
+ * [A, B, C, D, E].forEach(removeCandidates([1, 2, 3]));
+ * 
+ * @param {*} values values to be removed
+ */
+function removeCandidates() {
+    const values = [...arguments].flat();
+    return square => square.candidates = square.candidates.filter(value => !values.includes(value));
 }
 
 // [[1, [A, B, C]], [2, [A]], ...]
@@ -344,7 +351,7 @@ function basicElimination(squares) {
         squares
             .filter(squareIsInTheSameRowColumnOrHouseAs(square))
             .filter(notThisSquare(square))
-            .forEach(relatedSquare => removeCandidates(relatedSquare, [square.value])));
+            .forEach(removeCandidates(square.value)));
 }
 
 
@@ -362,12 +369,12 @@ function ommission(squares) {
                     squares
                         .filter(squareIsInTheSameRowAs(square))
                         .filter(squareIsNotInTheSameHouseAs(square))
-                        .forEach(relatedSquare => removeCandidates(relatedSquare, [candidate]));
+                        .forEach(removeCandidates(candidate));
                 } else if (allSquaresAreInOneColumn(squaresWithCandidate)) {
                     squares
                         .filter(squareIsInTheSameColumnAs(square))
                         .filter(squareIsNotInTheSameHouseAs(square))
-                        .forEach(relatedSquare => removeCandidates(relatedSquare, [candidate]));
+                        .forEach(removeCandidates(candidate));
                 }
             });
 }
@@ -444,7 +451,7 @@ function nakedPair(squares) {
                 .filter(([a, b]) => squareHasIdenticalCandidatesAs(a)(b))
                 .forEach(([a, b]) => squaresInGroup 
                     .filter(notTheseSquares([a, b]))
-                    .forEach(relatedSquare => removeCandidates(relatedSquare, a.candidates)));
+                    .forEach(removeCandidates(a.candidates)));
         });
     }
 
@@ -472,7 +479,7 @@ function nakedTripple(squares) {
                     .filter(squareHasOnlyCandidatesAs(square))
                     .forEach(thirdSquare => squaresInGroup
                         .filter(notTheseSquares([square, squareWithIdenticalCandidates, thirdSquare]))
-                        .forEach(affectedSquare => removeCandidates(affectedSquare, square.candidates))));
+                        .forEach(removeCandidates(square.candidates))));
         });
     }
 
@@ -500,7 +507,7 @@ function xWing(squares) {
                 .filter(squareHasNoValue)
                 .filter(notTheseSquares([a, b, c, d]))
                 .filter(square => squareIsInTheSameColumnAs(a)(square) || squareIsInTheSameColumnAs(b)(square))
-                .forEach(square => removeCandidates(square, [candidate])));
+                .forEach(removeCandidates(candidate)));
     });
 
     const columnsWhereOnlyTwoSquaresHaveTheCandidate = columns(squares);
@@ -517,7 +524,7 @@ function xWing(squares) {
                 .filter(squareHasNoValue)
                 .filter(notTheseSquares([a, b, c, d]))
                 .filter(square => squareIsInTheSameRowAs(a)(square) || squareIsInTheSameRowAs(b)(square))
-                .forEach(square => removeCandidates(square, [candidate])));
+                .forEach(removeCandidates(candidate)));
     });
 }
 
