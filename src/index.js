@@ -252,27 +252,89 @@ function reduceCandidates(squares) {
     xWing(squares);
 }
 
+
+
+// values
+function squareHasValue({value}) {
+    return value != null;
+}
+
+function squareHasNoValue({value}) {
+    return value == null;
+}
+
+// positions
+function notThisSquare({i}) {
+    return square => square.i !== i;
+}
+
+function notTheseSquares(squares) {
+    const ids = squares.map(({i}) => i);
+    return square => !ids.includes(square.i);
+}
+
+function squareIsInTheSameRowColumnOrHouseAs({house, row, column}) {
+    return square => square.house === house || square.row === row || square.column === column;
+}
+
+function squareIsInTheSameRowAs({row}) {
+    return square => square.row === row;
+}
+
+function squareIsInTheSameColumnAs({column}) {
+    return square => square.column === column;
+}
+
+function squareIsNotInTheSameHouseAs({house}) {
+    return square => square.house !== house;
+}
+
+function allSquaresAreInOneRow(squares) {
+    const row = squares[0].row;
+    return squares.every(square => square.row === row);
+}
+
+function allSquaresAreInOneColumn(squares) {
+    const column = squares[0].column;
+    return squares.every(square => square.column === column);
+}
+
+// candidates
+function squareHasCandidate(value) {
+    return ({candidates}) => candidates != null && candidates.includes(value);
+}
+
+function squareHasIdenticalCandidatesAs({candidates}) {
+    return square => square.candidates.length === candidates.length
+        && square.candidates.every(candidate => candidates.includes(candidate));
+}
+
+function squareHasOnlyCandidatesAs({candidates}) {
+    return square => square.candidates.length <= candidates.length
+        && square.candidates.every(candidate => candidates.includes(candidate));
+}
+
+
+function removeCandidates(square, values) {
+    square.candidates = square.candidates.filter(value => !values.includes(value));
+}
+
+
+
+
+
+
 // BASIC ELIMINATION
 // the same value cannot be in the same house, row and column
 function basicElimination(squares) {
     squares.filter(squareHasValue).forEach(square => 
         squares
-            .filter(squareIsInTheSameRowColumnOrHouse(square))
+            .filter(squareIsInTheSameRowColumnOrHouseAs(square))
             .filter(notThisSquare(square))
             .forEach(relatedSquare => removeCandidates(relatedSquare, [square.value])));
 }
 
-function squareHasValue({value}) {
-    return value != null;
-}
 
-function notThisSquare({i}) {
-    return square => square.i !== i;
-}
-
-function squareIsInTheSameRowColumnOrHouse({house, row, column}) {
-    return square => square.house === house || square.row === row || square.column === column;
-}
 
 // HIDDEN SINGLE 
 // there is no other square in which the value can be in the row/column/block
@@ -304,17 +366,6 @@ function histogramOfCandidates(squares) {
     return histogram;   
 }
 
-function squareHasNoValue({value}) {
-    return value == null;
-}
-
-function squareHasCandidate(value) {
-    return ({candidates}) => candidates != null && candidates.includes(value);
-}
-
-function removeCandidates(square, values) {
-    square.candidates = square.candidates.filter(value => !values.includes(value));
-}
 
 
 // OMMISSION
@@ -344,27 +395,6 @@ function ommission(squares) {
     }
 }
 
-function allSquaresAreInOneRow(squares) {
-    const row = squares[0].row;
-    return squares.every(square => square.row === row);
-}
-
-function allSquaresAreInOneColumn(squares) {
-    const column = squares[0].column;
-    return squares.every(square => square.column === column);
-}
-
-function squareIsNotInTheSameHouseAs({house}) {
-    return square => square.house !== house;
-}
-
-function squareIsInTheSameRowAs({row}) {
-    return square => square.row === row;
-}
-
-function squareIsInTheSameColumnAs({column}) {
-    return square => square.column === column;
-}
 
 
 // NAKED PAIR
@@ -424,15 +454,6 @@ function nakedTripple(squares) {
     revealIn(houses);
 }
 
-function squareHasIdenticalCandidatesAs({candidates}) {
-    return square => square.candidates.length === candidates.length
-        && square.candidates.every(candidate => candidates.includes(candidate));
-}
-
-function squareHasOnlyCandidatesAs({candidates}) {
-    return square => square.candidates.length <= candidates.length
-        && square.candidates.every(candidate => candidates.includes(candidate));
-}
 
 // HIDDEN PAIR
 // FIXME Reimplement this approach  :)
@@ -473,7 +494,7 @@ function hiddenPair(squares) {
 // https://www.learn-sudoku.com/x-wing.html
 function xWing(squares) {
     const squaresInRows = rows(squares);
-    for (let candidate = 1; candidate <= 9; candidate++) {
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(candidate => {
         const interestingRows = squaresInRows
             .map(squaresInRow => squaresInRow
                 .filter(squareHasNoValue)
@@ -488,10 +509,10 @@ function xWing(squares) {
                 .filter(notTheseSquares(b))
                 .filter(square => squareIsInTheSameColumnAs(a[0])(square) || squareIsInTheSameColumnAs(a[1])(square))
                 .forEach(square => removeCandidates(square, [candidate])));
-    }
+    });
 
     const squaresInColumns = columns(squares);
-    for (let candidate = 1; candidate <= 9; candidate++) {
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(candidate => {
         const interestingColumns = squaresInColumns
             .map(squaresInColumn => squaresInColumn
                 .filter(squareHasNoValue)
@@ -506,7 +527,7 @@ function xWing(squares) {
                 .filter(notTheseSquares(b))
                 .filter(square => squareIsInTheSameRowAs(a[0])(square) || squareIsInTheSameRowAs(a[1])(square))
                 .forEach(square => removeCandidates(square, [candidate])));
-    }
+    });
 }
 
 function combinationsWithoutRepetition(array) {
@@ -519,7 +540,3 @@ function combinationsWithoutRepetition(array) {
     return combinations;
 }
 
-function notTheseSquares(squares) {
-    const ids = squares.map(({i}) => i);
-    return square => !ids.includes(square.i);
-}
