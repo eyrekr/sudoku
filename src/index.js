@@ -387,45 +387,27 @@ function hiddenSingle(squares) {
     revealIn(rows);
 }
 
-
 // HIDDEN PAIR
-// FIXME Reimplement this approach  :)
 // https://www.learn-sudoku.com/hidden-pairs.html
 function hiddenPair(squares) {
-    function revealIn(groupsOf) {
-        for (let squaresInGroup of groupsOf(squares)) {
-            for (let a = 1; a <= 9; a++) {
-                const squaresWithCandidateA = squaresInGroup
-                    .filter(squareHasNoValue)
-                    .filter(squareHasCandidate(a));
-                if (squaresWithCandidateA.length === 2) {
-                    for (let b = a + 1; b <= 9; b++) {
-                        const squaresWithCandidateB = squaresInGroup
-                            .filter(squareHasNoValue)
-                            .filter(squareHasCandidate(b));
-                        if (squaresWithCandidateB.length === 2) {
-                            const squaresWithBothCandidates = squaresInGroup
-                                .filter(squareHasNoValue)
-                                .filter(squareHasCandidate(a))
-                                .filter(squareHasCandidate(b));
-                            if (squaresWithBothCandidates.length === 2) {
-                                squaresWithBothCandidates.forEach(square => square.candidates = [a, b]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    const revealIn = groupsOf => groupsOf(squares) 
+        .forEach(squaresInGroup => {
+            // pairs displayed as (x: X; y: Y) even though they are implemented as array [X, Y]
+            // [(squares: [A, B]; candidate: 3), (squares: [B, G]; candidate: 7), (squares: [A, B]; candidate: 9), ...]
+            const twoSquaresWithCandidate = squaresWithCandidate(squaresInGroup)
+                .filter(([squares]) => squares.length === 2);
+
+            // [(left: (squares: [A, B]; candidate: 3), right: (squares: [A, B]; candidate: 9)), ...]
+            allUniquePairs(twoSquaresWithCandidate)
+                .filter(([[squares1], [squares2]]) => isGroupEqualTo(squares1)(squares2))
+                .flatMap(([[squares, c1],[_, c2]]) => squares.map(square => [square, [c1, c2]]))
+                .forEach(([square, candidates]) => square.candidates = candidates);
+        });
 
     revealIn(rows);
     revealIn(columns);
     revealIn(houses);
 }
-
-
-
-
 
 // NAKED PAIR
 // two squares in the same row/column/house have identical two candidates, no other square in the same row/column/house can have those candidates
@@ -454,8 +436,8 @@ function nakedPair(squares) {
 // one of the squares can have only 2 of the values, not all three of them, e.g. 167 - 167 - 16 works too
 // https://www.learn-sudoku.com/naked-triplets.html
 function nakedTripple(squares) {
-    function revealIn(groupsOf) {
-        groupsOf(squares).forEach(squaresInGroup => {
+    const revealIn = groupsOf => groupsOf(squares)
+        .forEach(squaresInGroup => {
             const squaresWithThreeCandidates = squaresInGroup
                 .filter(squareHasNoValue)
                 .filter(square => square.candidates.length === 3);
@@ -470,14 +452,11 @@ function nakedTripple(squares) {
                         .filter(notTheseSquares(square, squareWithIdenticalCandidates, thirdSquare))
                         .forEach(removeCandidates(square.candidates))));
         });
-    }
 
     revealIn(rows);
     revealIn(columns);
     revealIn(houses);
 }
-
-
 
 // X-WING
 // https://www.learn-sudoku.com/x-wing.html
@@ -527,4 +506,9 @@ function allUniquePairs(array) {
     return array.flatMap((a, i) => array
         .filter((_, j) => i < j)
         .map(b => [a, b]));
+}
+
+function isGroupEqualTo(other) {
+    return group => group.length === other.length 
+        && group.every((element, index) => element === other[index]);
 }
