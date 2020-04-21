@@ -399,7 +399,7 @@ function hiddenPair(squares) {
 
             // [(left: (squares: [A, B]; candidate: 3), right: (squares: [A, B]; candidate: 9)), ...]
             allUniquePairs(twoSquaresWithCandidate)
-                .filter(([[squares1], [squares2]]) => isGroupEqualTo(squares1)(squares2))
+                .filter(([[squares1], [squares2]]) => isArrayStrictlyEqualTo(squares1)(squares2))
                 .flatMap(([[squares, c1],[_, c2]]) => squares.map(square => [square, [c1, c2]]))
                 .forEach(([square, candidates]) => square.candidates = candidates);
         });
@@ -508,7 +508,13 @@ function allUniquePairs(array) {
         .map(b => [a, b]));
 }
 
-function isGroupEqualTo(other) {
-    return group => group.length === other.length 
-        && group.every((element, index) => element === other[index]);
+/**
+ * Strict array equality. 
+ * Two arrays are strictly equal when they have the same elements on the same positions.
+ * 
+ * @param {array} other the other array
+ */
+function isArrayStrictlyEqualTo(other) {
+    return array => array.length === other.length 
+        && array.every((element, index) => element === other[index]);
 }
