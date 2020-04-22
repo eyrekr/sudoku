@@ -409,6 +409,26 @@ function hiddenPair(squares) {
     revealIn(houses);
 }
 
+// HIDDEN TRIPPLE
+function hiddenTripple(squares) {
+    const revealIn = groupsOf => groupsOf(squares) 
+        .forEach(squaresInGroup => {
+            const threeSquaresWithCandidate = squaresWithCandidate(squaresInGroup)
+                .filter(([squares]) => squares.length === 3);
+
+            // [(left: (squares: [A, B, C]; candidate: 3), right: (squares: [A, C, G]; candidate: 9)), ...]
+            allUniquePairs(threeSquaresWithCandidate)
+                .filter(([[squares1], [squares2]]) => isArrayStrictlyEqualTo(squares1)(squares2));
+                // FIXME:
+                // Go through squaresWithCandidate (we do not have such an array) and look for the third candidate c3 != c1 != c2
+                // and the candidate c3 must have 2 or 3 squares out of squares1 (or squares2)
+        });
+
+    revealIn(rows);
+    revealIn(columns);
+    revealIn(houses);
+}
+
 // NAKED PAIR
 // two squares in the same row/column/house have identical two candidates, no other square in the same row/column/house can have those candidates
 // https://www.learn-sudoku.com/naked-pairs.html
